@@ -1,5 +1,16 @@
-
 (Complete documentation follows this change summary.)
+
+What's new in version 0.90:
+
+  AUTODEFERMENT: Tie::File will now turn deferred writing on and off
+  automatically when it thinks it would be good to do so.  You may
+  disable this feature by calling ->autodefer(0) or by supplying the
+  'autodefer => 0' option with 'tie'.
+
+  The read cache now uses a heap instead of an array.  This yields
+  much better performance for large caches.
+
+  Other performance improvements.
 
 What's new in version 0.51:
 
@@ -94,7 +105,7 @@ NAME
     Tie::File - Access the lines of a disk file via a Perl array
 
 SYNOPSIS
-            # This file documents Tie::File version 0.51
+            # This file documents Tie::File version 0.90
 
             tie @array, 'Tie::File', filename or die ...;
 
@@ -363,7 +374,7 @@ Public Methods
 
     See the section on "autochomp", above.
 
-  `defer', `flush', and `discard'
+  `defer', `flush', `discard', and `autodefer'
 
     See the section on "Deferred Writing", below.
 
@@ -428,11 +439,18 @@ Deferred Writing
     will done in memory. Then, when you call `->flush', the entire
     file will be rewritten in a single pass.
 
+    (Actually, the preceding discussion is something of a fib. You
+    don't need to enable deferred writing to get good performance
+    for this common case, because `Tie::File' will do it for you
+    automatically unless you specifically tell it not to. See the
+    section on "autodeferring", below.)
+
     Calling `->flush' returns the array to immediate-write mode. If
-    you wish to discard the deferred writes, you may call `-
-    >discard' instead of `->flush'. Note that in some cases, some of
-    the data will have been written already, and it will be too late
-    for `->discard' to discard all the changes.
+    you wish to discard the deferred writes, you may call `->discard'
+    instead of `->flush'. Note that in some cases, some of the data
+    will have been written already, and it will be too late for
+    `->discard' to discard all the changes. Support for `->discard'
+    may be withdrawn in a future version of `Tie::File'.
 
     Deferred writes are cached in memory up to the limit specified
     by the `dw_size' option (see above). If the deferred-write
@@ -451,15 +469,31 @@ Deferred Writing
     data is written to the file and the operation is performed
     immediately. This may change in a future version.
 
-    A soon-to-be-released version of this module may enabled
-    deferred write mode automagically if it guesses that you are
-    about to write many consecutive records. To disable this
-    feature, use
+    If you resize the array with deferred writing enabled, the file
+    will be resized immediately, but deferred records will not be
+    written.
+
+  Autodeferring
+
+    `Tie::File' tries to guess when deferred writing might be
+    helpful, and to turn it on and off automatically. In the example
+    above, only the first two assignments will be done immediately;
+    after this, all the changes to the file will be deferred up to
+    the user-specified memory limit.
+
+    You should usually be able to ignore this and just use the
+    module without thinking about deferring. However, special
+    applications may require fine control over which writes are
+    deferred, or may require that all writes be immediate. To
+    disable the autodeferment feature, use
 
             (tied @o)->autodefer(0);
 
 
-    (At present, this call does nothing.)
+    or
+
+            tie @array, 'Tie::File', $file, autodefer => 0;
+
 
 CAVEATS
     (That's Latin for 'warnings'.)
@@ -467,7 +501,13 @@ CAVEATS
     *   This is BETA RELEASE SOFTWARE. It may have bugs. See the
         discussion below about the (lack of any) warranty.
 
-    *   Every effort was made to make this module efficient.
+        In particular, this means that the interface may change in
+        incompatible ways from one version to the next, without
+        warning. That has happened at least once already. The
+        interface will freeze before Perl 5.8 is released, probably
+        sometime in April 2002.
+
+    *   Reasonable effort was made to make this module efficient.
         Nevertheless, changing the size of a record in the middle of
         a large file will always be fairly slow, because everything
         after the new record must be moved.
@@ -493,8 +533,9 @@ CAVEATS
         Because when `autochomp' is disabled, `$a[10]' will read
         back as `"\n"' (or whatever the record separator string is.)
 
-        There are other minor differences, but in general, the
-        correspondence is extremely close.
+        There are other minor differences, particularly regarding
+        `exists' and `delete', but in general, the correspondence is
+        extremely close.
 
     *   Not quite every effort was made to make this module as efficient
         as possible. `FETCHSIZE' should use binary search instead of
@@ -517,13 +558,13 @@ CAVEATS
         structures inside the module will be dominated by the time
         to actually perform the I/O. This suggests, for example,
         that an LRU read-cache is a good tradeoff, even if it
-        requires substantial adjustment following a `splice'
+        requires substantial bookkeeping following a `splice'
         operation.
 
-    *
-    You might be tempted to think that deferred writing is like
-    transactions, with `flush' as `commit' and `discard' as
-    `rollback', but it isn't, so don't.
+    *   You might be tempted to think that deferred writing is like
+        transactions, with `flush' as `commit' and `discard' as
+        `rollback', but it isn't, so don't.
+
 
 SUBCLASSING
     This version promises absolutely nothing about the internals,
@@ -623,7 +664,7 @@ AUTHOR
 
 
 LICENSE
-    `Tie::File' version 0.51 is copyright (C) 2002 Mark Jason
+    `Tie::File' version 0.90 is copyright (C) 2002 Mark Jason
     Dominus.
 
     This library is free software; you may redistribute it and/or
@@ -652,7 +693,7 @@ LICENSE
 
 
 WARRANTY
-    `Tie::File' version 0.51 comes with ABSOLUTELY NO WARRANTY. For
+    `Tie::File' version 0.90 comes with ABSOLUTELY NO WARRANTY. For
     details, see the license.
 
 THANKS
@@ -665,36 +706,34 @@ THANKS
     Special thanks to Craig Berry and Peter Prymmer (for VMS
     portability help), Randy Kobes (for Win32 portability help),
     Clinton Pierce and Autrijus Tang (for heroic eleventh-hour Win32
-    testing above and beyond the call of duty), and the rest of the
-    CPAN testers (for testing generally).
+    testing above and beyond the call of duty), Michael G Schwern
+    (for testing advice), and the rest of the CPAN testers (for
+    testing generally).
 
     Additional thanks to: Edward Avis / Gerrit Haase / Nikola
     Knezevic / Nick Ing-Simmons / Tassilo von Parseval / H. Dieter
-    Pearcey / Slaven Rezic / Peter Somu / Autrijus Tang (again) /
-    Tels
+    Pearcey / Slaven Rezic / Peter Scott / Peter Somu / Autrijus
+    Tang (again) / Tels
 
 TODO
-    Test DELETE machinery more carefully.
+    More tests. (_twrite should be tested separately, because there
+    are a lot of weird special cases lurking in there.)
 
-    More tests. (`mode' option. _twrite should be tested separately,
-    because there are a lot of weird special cases lurking in
-    there.)
+    Improve SPLICE algorithm to use deferred writing machinery.
 
     More tests. (Stuff I didn't think of yet.)
 
     Paragraph mode?
 
-    More tests.
-
-    Fixed-length mode.
+    Fixed-length mode. Leave-blanks mode.
 
     Maybe an autolocking mode?
 
-    Autodeferment.
+    Record locking with fcntl()? Then the module might support an
+    undo log and get real transactions. What a tour de force that
+    would be.
 
-    Record locking with fcntl()? Then you might support an undo log
-    and get real transactions. What a coup that would be. All would
-    bow before my might.
+    Cleverer strategy for flushing deferred writes.
 
-    Leave-blanks mode
+    More tests.
 

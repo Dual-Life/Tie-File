@@ -1,6 +1,14 @@
-What's new in version 0.51:
+What's new in version 0.90:
 
-  Minor fixes in the test suite.
+  AUTODEFERMENT: Tie::File will now turn deferred writing on and off
+  automatically when it thinks it would be good to do so.  You may
+  disable this feature by calling ->autodefer(0) or by supplying the
+  'autodefer => 0' option with 'tie'.
+
+  The read cache now uses a heap instead of an array.  This yields
+  much better performance for large caches.
+
+  Other performance improvements.
 
 What's new in version 0.50:
 
