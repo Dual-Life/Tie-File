@@ -17,12 +17,11 @@
 
 
 # Finish these later.
-# They're nonurgent because the important heap stuff is extensively tested by 
-# test 19, 20, 24, 30, 32, 33, and 40, as well as pretty much everything else.
-print "1..0\n"; exit;
 
-__END__
-print "1..19\n";
+# They're nonurgent because the important heap stuff is extensively
+# tested by tests 19, 20, 24, 30, 32, 33, and 40, as well as by pretty
+# much everything else.
+print "1..1\n";
 
 
 my ($N, @R, $Q, $ar) = (1);
@@ -30,6 +29,9 @@ my ($N, @R, $Q, $ar) = (1);
 use Tie::File;
 print "ok $N\n";
 $N++;
+exit;
+
+__END__
 
 my @HEAP_MOVE;
 sub Fake::Cache::_heap_move { push @HEAP_MOVE, @_ }

@@ -1,5 +1,10 @@
 (Complete documentation follows this change summary.)
 
+What's new in version 0.93:
+
+  No significant changes.  (Release was mainly to correct an error in
+  one of the test files.)
+
 What's new in version 0.92:
 
   Bug fixes:  Negative 'nrecs' argument to 'splice' is now handled
@@ -63,15 +68,13 @@ What's new in version 0.20:
 
   Tests for this new feature.
 
-
 ----------------------------------------------------------------
-
 
 NAME
     Tie::File - Access the lines of a disk file via a Perl array
 
 SYNOPSIS
-            # This file documents Tie::File version 0.92
+            # This file documents Tie::File version 0.93
 
             tie @array, 'Tie::File', filename or die ...;
 
@@ -581,7 +584,7 @@ AUTHOR
 
 
 LICENSE
-    `Tie::File' version 0.92 is copyright (C) 2002 Mark Jason
+    `Tie::File' version 0.93 is copyright (C) 2002 Mark Jason
     Dominus.
 
     This library is free software; you may redistribute it and/or
@@ -610,7 +613,7 @@ LICENSE
 
 
 WARRANTY
-    `Tie::File' version 0.92 comes with ABSOLUTELY NO WARRANTY. For
+    `Tie::File' version 0.93 comes with ABSOLUTELY NO WARRANTY. For
     details, see the license.
 
 THANKS
@@ -627,10 +630,10 @@ THANKS
     (for testing advice), and the rest of the CPAN testers (for
     testing generally).
 
-    Additional thanks to: Edward Avis / Gerrit Haase / Nikola
-    Knezevic / Nick Ing-Simmons / Tassilo von Parseval / H. Dieter
-    Pearcey / Slaven Rezic / Peter Scott / Peter Somu / Autrijus
-    Tang (again) / Tels / Juerd Wallboer
+    Additional thanks to: Edward Avis / Mattia Barbon / Gerrit Haase
+    / Nikola Knezevic / Nick Ing-Simmons / Tassilo von Parseval / H.
+    Dieter Pearcey / Slaven Rezic / Peter Scott / Peter Somu /
+    Autrijus Tang (again) / Tels / Juerd Wallboer
 
 TODO
     More tests. (The cache and heap modules need more unit tests.)
