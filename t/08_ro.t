@@ -5,7 +5,6 @@
 
 my $file = "tf$$.txt";
 $: = Tie::File::_default_recsep();
-use lib '/home/mjd/src/perl/Tie-File2/lib';
 
 print "1..13\n";
 

@@ -1,3 +1,10 @@
+What's new in version 0.92:
+
+  Bug fixes:  Negative 'nrecs' argument to 'splice' is now handled
+  correctly.  Tie::File now behaves correctly even if you change $\.
+
+  More tests and (very) minor performance enhancements.
+
 What's new in version 0.91:
 
   Tie::File now correctly handles attempts to store undefined values

@@ -33,6 +33,7 @@ t/31_autodefer.t
 t/32_defer_misc.t
 t/33_defer_vs.t
 t/40_abs_cache.t
+t/41_heap.t
 README
 WHATSNEW
 COPYING

@@ -1,5 +1,12 @@
 (Complete documentation follows this change summary.)
 
+What's new in version 0.92:
+
+  Bug fixes:  Negative 'nrecs' argument to 'splice' is now handled
+  correctly.  Tie::File now behaves correctly even if you change $\.
+
+  More tests and (very) minor performance enhancements.
+
 What's new in version 0.91:
 
   Tie::File now correctly handles attempts to store undefined values
@@ -64,7 +71,7 @@ NAME
     Tie::File - Access the lines of a disk file via a Perl array
 
 SYNOPSIS
-            # This file documents Tie::File version 0.90
+            # This file documents Tie::File version 0.92
 
             tie @array, 'Tie::File', filename or die ...;
 
@@ -574,7 +581,7 @@ AUTHOR
 
 
 LICENSE
-    `Tie::File' version 0.90 is copyright (C) 2002 Mark Jason
+    `Tie::File' version 0.92 is copyright (C) 2002 Mark Jason
     Dominus.
 
     This library is free software; you may redistribute it and/or
@@ -603,7 +610,7 @@ LICENSE
 
 
 WARRANTY
-    `Tie::File' version 0.90 comes with ABSOLUTELY NO WARRANTY. For
+    `Tie::File' version 0.92 comes with ABSOLUTELY NO WARRANTY. For
     details, see the license.
 
 THANKS
