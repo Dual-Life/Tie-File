@@ -5,7 +5,6 @@
 require 5.004;
 use strict;
 use ExtUtils::MakeMaker;
-
 WriteMakefile(
   'NAME' => 'Tie::File',
   'VERSION_FROM' => 'lib/Tie/File.pm', # finds $VERSION

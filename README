@@ -1,7 +1,7 @@
 
 (Complete documentation follows this change summary.)
 
-What's new in version 0.21:
+What's new in version 0.50:
 
   DEFERRED WRITING:  You may now use the ->defer method to request
   that changes to the array *not* be written to the file immediately.
@@ -49,13 +49,48 @@ What's new in version 0.17:
 
   Minor cleanups and test improvements for release with Perl 5.7.3.
 
+What's new in version 0.16:
+
+  You may now tie an array to an already-opened seekable filehandle,
+  rather than to a filename.
+
+  More tests.
+
+  Bug fix in STORE: It wasn't tracking the cache size correctly
+
+  Bug fix in DELETE: it wasn't adjusting the offsets, cache, and LRU
+  tables correctly when deleting the last record in the file.
+
+What's new in version 0.15:
+
+  Fixed bug in POP of empty file.
+
+  SPLICE now defaults its arguments correctly.
+
+  test suite and ->_integrity now borrow the object's internal
+  filehandle instead of opening new ones; this may improve portability
+  of the test suite.
+
+  License is now "Same terms as Perl" instead of GPL.
+
+What's new in version 0.14:
+
+  Added ->flock method for locking the handle.
+
+  Added PUSH, POP, SHIFT, UNSHIFT, CLEAR, EXTEND,  DELETE and EXISTS methods.
+
+  Handling of negative position argument to 'SPLICE' is now correct.
+  Return of SPLICE in scalar context is now correct.
+
+
+
 ----------------------------------------------------------------
 
 NAME
     Tie::File - Access the lines of a disk file via a Perl array
 
 SYNOPSIS
-            # This file documents Tie::File version 0.21
+            # This file documents Tie::File version 0.50
 
             tie @array, 'Tie::File', filename or die ...;
 
@@ -584,7 +619,7 @@ AUTHOR
 
 
 LICENSE
-    `Tie::File' version 0.21 is copyright (C) 2002 Mark Jason
+    `Tie::File' version 0.50 is copyright (C) 2002 Mark Jason
     Dominus.
 
     This library is free software; you may redistribute it and/or
@@ -613,7 +648,7 @@ LICENSE
 
 
 WARRANTY
-    `Tie::File' version 0.21 comes with ABSOLUTELY NO WARRANTY. For
+    `Tie::File' version 0.50 comes with ABSOLUTELY NO WARRANTY. For
     details, see the license.
 
 THANKS

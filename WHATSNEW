@@ -1,4 +1,4 @@
-What's new in version 0.21:
+What's new in version 0.50:
 
   DEFERRED WRITING:  You may now use the ->defer method to request
   that changes to the array *not* be written to the file immediately.
