@@ -28,12 +28,17 @@ t/23_rv_ac_splice.t
 t/24_cache_loop.t
 t/25_gen_nocache.t
 t/26_twrite.t
+t/27_iwrite.t
+t/28_mtwrite.t
+t/29_downcopy.t
+t/29a_upcopy.t
 t/30_defer.t
 t/31_autodefer.t
 t/32_defer_misc.t
 t/33_defer_vs.t
 t/40_abs_cache.t
 t/41_heap.t
+t/42_offset.t
 README
 WHATSNEW
 COPYING

@@ -1,80 +1,29 @@
 (Complete documentation follows this change summary.)
 
-What's new in version 0.93:
+What's new in version 0.95:
 
-  No significant changes.  (Release was mainly to correct an error in
-  one of the test files.)
+  Flushing out the deferred-write buffer is now done in a single pass,
+  regardless of whether the records in the buffer are contiguous.
 
-What's new in version 0.92:
+  Various time and memory performance enhancements courtesy of Tels.
+  (<tels@bloodgate.com>)
 
-  Bug fixes:  Negative 'nrecs' argument to 'splice' is now handled
-  correctly.  Tie::File now behaves correctly even if you change $\.
+  ->flock method now discards read cache and offsets table when
+  successful.  
 
-  More tests and (very) minor performance enhancements.
+  Miscellaneous minor bugs fixes and test suite enhancements.
 
-What's new in version 0.91:
-
-  Tie::File now correctly handles attempts to store undefined values
-  in the array: they are silently converted to defined empty strings.
-
-  If the last record of the file is not properly terminated with the
-  record terminator string, and if the file was opened for writing,
-  Tie::File will silently repair it.  Formerly, it would mangle the file.
-
-  More unit tests.
-
-  Performance enhancements.
-
-What's new in version 0.90:
-
-  AUTODEFERMENT: Tie::File will now turn deferred writing on and off
-  automatically when it thinks it would be good to do so.  You may
-  disable this feature by calling ->autodefer(0) or by supplying the
-  'autodefer => 0' option with 'tie'.
-
-  The read cache now uses a heap instead of an array.  This yields
-  much better performance for large caches.
-
-  Other performance improvements.
-
-What's new in version 0.51:
-
-  Minor fixes in the test suite.
-
-What's new in version 0.50:
-
-  DEFERRED WRITING:  You may now use the ->defer method to request
-  that changes to the array *not* be written to the file immediately.
-  Changes will be written when the memory limit for deferred writes is
-  exceeded, or when you invoke the ->flush method.  You may discard
-  pending writes with the ->discard method.  You may set the limit of
-  discarded data with the 'dw_size' option.
-
-  The DELETE method now returns the correct values.
-
-What's new in version 0.20:
-
-  MAJOR INCOMPATIBLE CHANGE: Records read from the tied array now have
-  the record separator REMOVED by default.  This is to provide
-  do-what-I-meant behavior for expressions like
-
-        $tied[3] .= "more text";
-
-  Formerly, this would have appended "more text" *after* the newline character.
-
-  You may obtain the old behavior by supplying the 'autochomp => 0'
-  option in the 'tie' call, or by invoking the new 'autochomp'
-  accessor method.
-
-  Tests for this new feature.
+  New ->offset method for recovering offset table data.  (Tels again.)
 
 ----------------------------------------------------------------
+
 
 NAME
     Tie::File - Access the lines of a disk file via a Perl array
 
 SYNOPSIS
-            # This file documents Tie::File version 0.93
+            # This file documents Tie::File version 0.95
+            use Tie::File;
 
             tie @array, 'Tie::File', filename or die ...;
 
@@ -94,7 +43,7 @@ SYNOPSIS
             push @array, new recs...;
             my $r1 = pop @array;
             unshift @array, new recs...;
-            my $r1 = shift @array;
+            my $r2 = shift @array;
             @old_recs = splice @array, 3, 7, new recs...;
 
             untie @array;            # all finished
@@ -117,7 +66,7 @@ DESCRIPTION
 
     What is a 'record'? By default, the meaning is the same as for
     the `<...>' operator: It's a string terminated by `$/', which is
-    probably `"\n"'. (Minor exception: on dos and Win32 systems, a
+    probably `"\n"'. (Minor exception: on DOS and Win32 systems, a
     'record' is a string terminated by `"\r\n"'.) You may change the
     definition of "record" by supplying the `recsep' option in the
     `tie' call:
@@ -256,6 +205,11 @@ DESCRIPTION
     besides the read cache and the deferred write buffer, whose
     sizes are not charged against `memory'.
 
+    The cache itself consumes about 310 bytes per cached record, so
+    if your file has many short records, you may want to decrease
+    the cache memory limit, or else the cache overhead may exceed
+    the size of the cached data.
+
   `dw_size'
 
     (This is an advanced feature. Skip this section on first
@@ -310,6 +264,15 @@ Public Methods
 
     `MODE' is optional; the default is `LOCK_EX'.
 
+    `Tie::File' maintains an internal table of the byte offset of
+    each record it has seen in the file.
+
+    When you use `flock' to lock the file, `Tie::File' assumes that
+    the read cache is no longer trustworthy, because another process
+    might have modified the file since the last time it was read.
+    Therefore, a successful call to `flock' discards the contents of
+    the read cache and the internal record offset table.
+
     `Tie::File' promises that the following sequence of operations
     will be safe:
 
@@ -354,6 +317,15 @@ Public Methods
   `defer', `flush', `discard', and `autodefer'
 
     See the section on "Deferred Writing", below.
+
+  `offset'
+
+            $off = $o->offset($n);
+
+
+    This method returns the byte offset of the start of the `$n'th
+    record in the file. If there is no such record, it returns an
+    undefined value.
 
 Tying to an already-opened filehandle
     If `$fh' is a filehandle, such as is returned by `IO::File' or
@@ -485,17 +457,19 @@ Deferred Writing
     >autodefer()' recovers the current value of the autodefer
     setting.
 
+CONCURRENT ACCESS TO FILES
+    Caching and deferred writing are inappropriate if you want the
+    same file to be accessed simultaneously from more than one
+    process. You will want to disable these features. You should do
+    that by including the `memory => 0' option in your `tie' calls;
+    this will inhibit caching and deferred writing.
+
+    You will also want to lock the file while reading or writing it.
+    You can use the `->flock' method for this. A future version of
+    this module may provide an 'autolocking' mode.
+
 CAVEATS
     (That's Latin for 'warnings'.)
-
-    *   This is BETA RELEASE SOFTWARE. It may have bugs. See the
-        discussion below about the (lack of any) warranty.
-
-        In particular, this means that the interface may change in
-        incompatible ways from one version to the next, without
-        warning. That has happened at least once already. The
-        interface will freeze before Perl 5.8 is released, probably
-        sometime in April 2002.
 
     *   Reasonable effort was made to make this module efficient.
         Nevertheless, changing the size of a record in the middle of
@@ -527,31 +501,27 @@ CAVEATS
         `exists' and `delete', but in general, the correspondence is
         extremely close.
 
-    *   Not quite every effort was made to make this module as efficient
-        as possible. `FETCHSIZE' should use binary search instead of
-        linear search.
-
-        The performance of the `flush' method could be improved. At
-        present, it still rewrites the tail of the file once for
-        each block of contiguous lines to be changed. In the typical
-        case, this will result in only one rewrite, but in peculiar
-        cases it might be bad. It should be possible to perform
-        *all* deferred writing with a single rewrite.
-
-        Profiling suggests that these defects are probably minor; in
-        any event, they will be fixed in a future version of the
-        module.
-
     *   I have supposed that since this module is concerned with file
         I/O, almost all normal use of it will be heavily I/O bound.
         This means that the time to maintain complicated data
         structures inside the module will be dominated by the time
         to actually perform the I/O. When there was an opportunity
-        to spend CPU time to avoid doing I/O, I tried to take it.
+        to spend CPU time to avoid doing I/O, I usually tried to
+        take it.
 
     *   You might be tempted to think that deferred writing is like
         transactions, with `flush' as `commit' and `discard' as
         `rollback', but it isn't, so don't.
+
+    *   There is a large memory overhead for each record offset and for
+        each cache entry: about 310 bytes per cached data record,
+        and about 21 bytes per offset table entry.
+
+        The per-record overhead will limit the maximum number of
+        records you can access per file. Note that *accessing* the
+        length of the array via `$x = scalar @tied_file' accesses
+        all records and stores their offsets. The same for `foreach
+        (@tied_file)', even if you exit the loop early.
 
 
 SUBCLASSING
@@ -584,7 +554,7 @@ AUTHOR
 
 
 LICENSE
-    `Tie::File' version 0.93 is copyright (C) 2002 Mark Jason
+    `Tie::File' version 0.95 is copyright (C) 2002 Mark Jason
     Dominus.
 
     This library is free software; you may redistribute it and/or
@@ -613,7 +583,7 @@ LICENSE
 
 
 WARRANTY
-    `Tie::File' version 0.93 comes with ABSOLUTELY NO WARRANTY. For
+    `Tie::File' version 0.95 comes with ABSOLUTELY NO WARRANTY. For
     details, see the license.
 
 THANKS
@@ -630,18 +600,16 @@ THANKS
     (for testing advice), and the rest of the CPAN testers (for
     testing generally).
 
+    Special thanks to Tels for suggesting several speed and memory
+    optimizations.
+
     Additional thanks to: Edward Avis / Mattia Barbon / Gerrit Haase
-    / Nikola Knezevic / Nick Ing-Simmons / Tassilo von Parseval / H.
-    Dieter Pearcey / Slaven Rezic / Peter Scott / Peter Somu /
-    Autrijus Tang (again) / Tels / Juerd Wallboer
+    / Jarkko Hietaniemi (again) / Nikola Knezevic / John Kominetz /
+    Nick Ing-Simmons / Tassilo von Parseval / H. Dieter Pearcey /
+    Slaven Rezic / Eric Roode / Peter Scott / Peter Somu / Autrijus
+    Tang (again) / Tels (again) / Juerd Waalboer
 
 TODO
-    More tests. (The cache and heap modules need more unit tests.)
-
-    Improve SPLICE algorithm to use deferred writing machinery.
-
-    Cleverer strategy for flushing deferred writes.
-
     More tests. (Stuff I didn't think of yet.)
 
     Paragraph mode?
@@ -650,9 +618,25 @@ TODO
 
     Maybe an autolocking mode?
 
+    For many common uses of the module, the read cache is a
+    liability. For example, a program that inserts a single record,
+    or that scans the file once, will have a cache hit rate of zero.
+    This suggests a major optimization: The cache should be
+    initially disabled. Here's a hybrid approach: Initially, the
+    cache is disabled, but the cache code maintains statistics about
+    how high the hit rate would be *if* it were enabled. When it
+    sees the hit rate get high enough, it enables itself. The STAT
+    comments in this code are the beginning of an implementation of
+    this.
+
     Record locking with fcntl()? Then the module might support an
     undo log and get real transactions. What a tour de force that
     would be.
+
+    Keeping track of the highest cached record. This would allow
+    reads-in-a-row to skip the cache lookup faster (if reading from
+    1..N with empty cache at start, the last cached value will be
+    always N-1).
 
     More tests.
 

@@ -1,3 +1,18 @@
+What's new in version 0.95:
+
+  Flushing out the deferred-write buffer is now done in a single pass,
+  regardless of whether the records in the buffer are contiguous.
+
+  Various time and memory performance enhancements courtesy of Tels.
+  (<tels@bloodgate.com>)
+
+  ->flock method now discards read cache and offsets table when
+  successful.  
+
+  Miscellaneous minor bugs fixes and test suite enhancements.
+
+  New ->offset method for recovering offset table data.  (Tels again.)
+
 What's new in version 0.93:
 
   No significant changes.  (Release was mainly to correct an error in
