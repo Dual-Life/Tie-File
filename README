@@ -1,5 +1,9 @@
 (Complete documentation follows this change summary.)
 
+What's new in version 0.96:
+
+  Minor bug fixes only.
+
 What's new in version 0.95:
 
   Flushing out the deferred-write buffer is now done in a single pass,
