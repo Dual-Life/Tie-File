@@ -1,4 +1,19 @@
 
+Complete documentation is found below.
+
+What's new in version 0.19:
+
+  Fix for severe bug involving a corrupt read cache.
+
+  Improved default record separator semantics on Win32 systems.
+
+  Many new tests, particularly for the read cache.  Improved old
+  tests, which may now produce fewer false failures on Win32 systems.
+
+  Increased documentation.
+
+  INCOMPATIBLE CHANGE: The 'cachesize' option has been renamed to 'memory'.
+
 What's new in version 0.18:
 
   No significant changes.  (Upload to force CPAN module database to update.)
@@ -40,14 +55,15 @@ What's new in version 0.14:
   Handling of negative position argument to 'SPLICE' is now correct.
   Return of SPLICE in scalar context is now correct.
 
-----------------------------------------------------------------
 
+
+----------------------------------------------------------------
 
 NAME
     Tie::File - Access the lines of a disk file via a Perl array
 
 SYNOPSIS
-            # This file documents Tie::File version 0.18
+            # This file documents Tie::File version 0.19
 
             tie @array, 'Tie::File', filename or die ...;
 
@@ -67,8 +83,6 @@ SYNOPSIS
 
             untie @array;            # all finished
 
-            # See below for more options and methods
-
 
 DESCRIPTION
     `Tie::File' represents a regular text file as a Perl array. Each
@@ -81,12 +95,16 @@ DESCRIPTION
 
     Changes to the array are reflected in the file immediately.
 
+    Lazy people may now stop reading the manual.
+
   `recsep'
 
     What is a 'record'? By default, the meaning is the same as for
     the `<...>' operator: It's a string terminated by `$/', which is
-    probably `"\n"'. You may change the definition of "record" by
-    supplying the `recsep' option in the `tie' call:
+    probably `"\n"'. (Minor exception: on dos and Win32 systems, a
+    'record' is a string terminated by `"\r\n"'.) You may change the
+    definition of "record" by supplying the `recsep' option in the
+    `tie' call:
 
             tie @array, 'Tie::File', $file, recsep => 'es';
 
@@ -104,9 +122,6 @@ DESCRIPTION
             "ky flies"
             "!\n"
 
-
-    Windows users will probably want to use `recsep => "\r\n"' to
-    get files terminated with the usual CRLF sequence.
 
     An undefined value is not permitted as a record separator.
     Perl's special "paragraph mode" semantics (à la `$/ = ""') are
@@ -165,31 +180,36 @@ DESCRIPTION
     Opening the data file in write-only or append mode is not
     supported.
 
-  `cachesize'
+  `memory'
+
+    This is an (inexact) upper limit on the amount of memory that
+    `Tie::File' will consume at any time while managing the file. At
+    present, this is used as a bound on the size of the read cache.
 
     Records read in from the file are cached, to avoid having to re-
     read them repeatedly. If you read the same record twice, the
     first time it will be stored in memory, and the second time it
-    will be fetched from memory.
+    will be fetched from the *read cache*. The amount of data in the
+    read cache will not exceed the value you specified for `memory'.
+    If `Tie::File' wants to cache a new record, but the read cache
+    is full, it will make room by expiring the least-recently
+    visited records from the read cache.
 
-    The cache has a bounded size; when it exceeds this size, the
-    least-recently visited records will be purged from the cache.
-    The default size is 2Mib. You can adjust the amount of space
-    used for the cache by supplying the `cachesize' option. The
-    argument is the desired cache size, in bytes.
+    The default memory limit is 2Mib. You can adjust the maximum
+    read cache size by supplying the `memory' option. The argument
+    is the desired cache size, in bytes.
 
             # I have a lot of memory, so use a large cache to speed up access
-            tie @array, 'Tie::File', $file, cachesize => 20_000_000;
+            tie @array, 'Tie::File', $file, memory => 20_000_000;
 
 
-    Setting the cache size to 0 will inhibit caching; records will
+    Setting the memory limit to 0 will inhibit caching; records will
     be fetched from disk every time you examine them.
 
   Option Format
 
     `-mode' is a synonym for `mode'. `-recsep' is a synonym for
-    `recsep'. `-cachesize' is a synonym for `cachesize'. You get the
-    idea.
+    `recsep'. `-memory' is a synonym for `memory'. You get the idea.
 
 Public Methods
     The `tie' call returns an object, say `$o'. You may call
@@ -198,8 +218,10 @@ Public Methods
             $o->STORE($n, $rec);
 
 
-    to fetch or store the record at line `$n', respectively. The
-    only other public method in this package is:
+    to fetch or store the record at line `$n', respectively;
+    similarly the other tied array methods. (See the perltie manpage
+    for details.) You may also call the following methods on this
+    object:
 
   `flock'
 
@@ -249,73 +271,154 @@ Public Methods
     Handles that were opened write-only won't work. Handles that
     were opened read-only will work as long as you don't try to
     write to them. Handles must be attached to seekable sources of
-    data---that means no pipes or sockets. If you try to supply a
-    non-seekable handle, the `tie' call will try to abort your
-    program. This feature is not yet supported under VMS.
+    data---that means no pipes or sockets. If you supply a non-
+    seekable handle, the `tie' call will try to abort your program.
 
 CAVEATS
     (That's Latin for 'warnings'.)
 
-  Efficiency Note
+    *   This is BETA RELEASE SOFTWARE. It may have bugs. See the
+        discussion below about the (lack of any) warranty.
 
-    Every effort was made to make this module efficient.
-    Nevertheless, changing the size of a record in the middle of a
-    large file will always be slow, because everything after the new
-    record must be moved.
+    *   Every effort was made to make this module efficient.
+        Nevertheless, changing the size of a record in the middle of
+        a large file will always be fairly slow, because everything
+        after the new record must be moved.
 
-    In particular, note that:
+        In particular, note that the following innocent-looking loop
+        has very bad behavior:
 
-            # million-line file
-            for (@file_array) {
-              $_ .= 'x';
-            }
-
-
-    is likely to be very slow, because the first iteration must
-    relocate lines 1 through 999,999; the second iteration must
-    relocate lines 2 through 999,999, and so on. The relocation is
-    done using block writes, however, so it's not as slow as it
-    might be.
-
-    A soon-to-be-released version of this module will provide a
-    mechanism for getting better performance in such cases, by
-    deferring the writing until it can be done all at once.
-
-  Efficiency Note 2
-
-    Not every effort was made to make this module as efficient as
-    possible. `FETCHSIZE' should use binary search instead of linear
-    search. The cache's LRU queue should be a heap instead of a
-    list. These defects are probably minor; in any event, they will
-    be fixed in a later version of the module.
-
-  Efficiency Note 3
-
-    The author has supposed that since this module is concerned with
-    file I/O, almost all normal use of it will be heavily I/O bound,
-    and that the time to maintain complicated data structures inside
-    the module will be dominated by the time to actually perform the
-    I/O. This suggests, for example, that an LRU read-cache is a
-    good tradeoff, even if it requires substantial adjustment
-    following a `splice' operation.
-
-CAVEATS
-    (That's Latin for 'warnings'.)
-
-    The behavior of tied arrays is not precisely the same as for
-    regular arrays. For example:
-
-            undef $a[10];  print "How unusual!\n" if $a[10];
+                # million-line file
+                for (@file_array) {
+                  $_ .= 'x';
+                }
 
 
-    `undef'-ing a `Tie::File' array element just blanks out the
-    corresponding record in the file. When you read it back again,
-    you'll see the record separator (typically, $a[10] will appear
-    to contain "\n") so the supposedly-`undef''ed value will be
-    true.
+        This is likely to be very slow, because the first iteration
+        must relocate lines 1 through 999,999; the second iteration
+        must relocate lines 2 through 999,999, and so on. The
+        relocation is done using block writes, however, so it's not
+        as slow as it might be.
 
-    There are other minor differences, but in general, the
-    correspondence is extremely close.
+        A soon-to-be-released version of this module will provide a
+        mechanism for getting better performance in such cases, by
+        deferring the writing until it can be done all at once. This
+        deferred writing feature might be enabled automagically if
+        `Tie::File' guesses that you are about to write many
+        consecutive records. To disable this feature, use
+
+                (tied @o)->autodefer(0);
+
+
+        (At present, this call does nothing.)
+
+    *   The behavior of tied arrays is not precisely the same as for
+        regular arrays. For example:
+
+                undef $a[10];  print "How unusual!\n" if $a[10];
+
+
+        `undef'-ing a `Tie::File' array element just blanks out the
+        corresponding record in the file. When you read it back
+        again, you'll see the record separator (typically, $a[10]
+        will appear to contain "\n") so the supposedly-`undef''ed
+        value will be true.
+
+        There are other minor differences, but in general, the
+        correspondence is extremely close.
+
+    *   Not quite every effort was made to make this module as efficient
+        as possible. `FETCHSIZE' should use binary search instead of
+        linear search. The cache's LRU queue should be a heap
+        instead of a list. These defects are probably minor; in any
+        event, they will be fixed in a later version of the module.
+
+    *   The author has supposed that since this module is concerned with
+        file I/O, almost all normal use of it will be heavily I/O
+        bound, and that the time to maintain complicated data
+        structures inside the module will be dominated by the time
+        to actually perform the I/O. This suggests, for example,
+        that an LRU read-cache is a good tradeoff, even if it
+        requires substantial adjustment following a `splice'
+        operation.
+
+
+WHAT ABOUT `DB_File'?
+    `DB_File''s `DB_RECNO' feature does something similar to
+    `Tie::File', but there are a number of reasons that you might
+    prefer `Tie::File'. `DB_File' is a great piece of software, but
+    the `DB_RECNO' part is less great than the rest of it.
+
+    *   `DB_File' reads your entire file into memory, modifies it in
+        memory, and the writes out the entire file again when you
+        untie the file. This is completely impractical for large
+        files.
+
+        `Tie::File' does not do any of those things. It doesn't try
+        to read the entire file into memory; instead it uses a lazy
+        approach and caches recently-used records. The cache size is
+        strictly bounded by the `memory' option. DB_File's `-
+        >{cachesize}' doesn't prevent your process from blowing up
+        when reading a big file.
+
+    *   `DB_File' has an extremely poor writing strategy. If you have a
+        ten-megabyte file and tie it with `DB_File', and then use
+
+                $a[0] =~ s/PERL/Perl/;
+
+
+        `DB_file' will then read the entire ten-megabyte file into
+        memory, do the change, and write the entire file back to
+        disk, reading ten megabytes and writing ten megabytes.
+        `Tie::File' will read and write only the first record.
+
+        If you have a million-record file and tie it with `DB_File',
+        and then use
+
+                $a[999998] =~ s/Larry/Larry Wall/;
+
+
+        `DB_File' will read the entire million-record file into
+        memory, do the change, and write the entire file back to
+        disk. `Tie::File' will only rewrite records 999998 and
+        999999. During the writing process, it will never have more
+        than a few kilobytes of data in memory at any time, even if
+        the two records are very large.
+
+    *   Since changes to `DB_File' files only appear when you do
+        `untie', it can be inconvenient to arrange for concurrent
+        access to the same file by two or more processes. Each
+        process needs to call `$db->sync' after every write. When
+        you change a `Tie::File' array, the changes are reflected in
+        the file immediately; no explicit `->sync' call is required.
+        (The forthcoming "deferred writing" mode will allow you to
+        request that writes be held in memory until explicitly
+        `sync''ed.)
+
+    *   `DB_File' is only installed by default if you already have the
+        `db' library on your system; `Tie::File' is pure Perl and is
+        installed by default no matter what. Starting with Perl
+        5.7.3 you can be absolutely sure it will be everywhere. You
+        will never have that surety with `DB_File'. If you don't
+        have `DB_File' yet, it requires a C compiler. You can
+        install `Tie::File' from CPAN in five minutes with no
+        compiler.
+
+    *   `DB_File' is written in C, so if you aren't allowed to install
+        modules on your system, it is useless. `Tie::File' is
+        written in Perl, so even if you aren't allowed to install
+        modules, you can look into the source code, see how it
+        works, and copy the subroutines or the ideas from the
+        subroutines directly into your own Perl program.
+
+    *   Except in very old, unsupported versions, `DB_File''s free
+        license requires that you distribute the source code for
+        your entire application. If you are not able to distribute
+        the source code for your application, you must negotiate an
+        alternative license from Sleepycat, possibly for a fee.
+        Tie::File is under the Perl Artistic license and can be
+        distributed free under the same terms as Perl itself.
+
 
 AUTHOR
     Mark Jason Dominus
@@ -328,7 +431,7 @@ AUTHOR
     subscribe@plover.com'.
 
 LICENSE
-    `Tie::File' version 0.18 is copyright (C) 2002 Mark Jason
+    `Tie::File' version 0.19 is copyright (C) 2002 Mark Jason
     Dominus.
 
     This library is free software; you may redistribute it and/or
@@ -357,7 +460,7 @@ LICENSE
 
 
 WARRANTY
-    `Tie::File' version 0.18 comes with ABSOLUTELY NO WARRANTY. For
+    `Tie::File' version 0.19 comes with ABSOLUTELY NO WARRANTY. For
     details, see the license.
 
 THANKS
@@ -368,22 +471,23 @@ THANKS
     of the same things.
 
     Special thanks to Craig Berry (for VMS portability help), Randy
-    Kobes (for Win32 portability help), the rest of the CPAN testers
-    (for testing).
+    Kobes (for Win32 portability help), Clinton Pierce and Autrijus
+    Tang (for heroic eleventh-hour Win32 testing above and beyond
+    the call of duty), and the rest of the CPAN testers (for testing
+    generally).
 
-    More thanks to: Gerrit Haase / Nick Ing-Simmons / Tassilo von
-    Parseval / H. Dieter Pearcey / Peter Somu / Tels
+    More thanks to: Edward Avis / Gerrit Haase / Nikola Knezevic /
+    Nick Ing-Simmons / Tassilo von Parseval / H. Dieter Pearcey /
+    Slaven Rezic / Peter Somu / Tels
 
 TODO
     Test DELETE machinery more carefully.
 
-    More tests. (Configuration options, cache flushery. _twrite
-    should be tested separately, because there are a lot of weird
-    special cases lurking in there.)
+    More tests. (`mode' option. _twrite should be tested separately,
+    because there are a lot of weird special cases lurking in
+    there.)
 
     More tests. (Stuff I didn't think of yet.)
-
-    Deferred writing. (!!!)
 
     Paragraph mode?
 
@@ -392,4 +496,13 @@ TODO
     Fixed-length mode.
 
     Maybe an autolocking mode?
+
+    Finish deferred writing.
+
+    Autodeferment.
+
+    Record locking with fcntl()? Then you might support an undo log
+    and get real transactions. What a coup that would be.
+
+    Leave-blanks mode
 
