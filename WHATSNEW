@@ -1,3 +1,7 @@
+What's new in version 0.51:
+
+  Minor fixes in the test suite.
+
 What's new in version 0.50:
 
   DEFERRED WRITING:  You may now use the ->defer method to request
