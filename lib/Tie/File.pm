@@ -5,7 +5,7 @@ use POSIX 'SEEK_SET';
 use Fcntl 'O_CREAT', 'O_RDWR', 'LOCK_EX';
 require 5.005;
 
-$VERSION = "0.17";
+$VERSION = "0.18";
 
 # Idea: The object will always contain an array of byte offsets
 # this will be filled in as is necessary and convenient.
@@ -634,7 +634,7 @@ Tie::File - Access the lines of a disk file via a Perl array
 
 =head1 SYNOPSIS
 
-	# This file documents Tie::File version 0.17
+	# This file documents Tie::File version 0.18
 
 	tie @array, 'Tie::File', filename or die ...;
 
@@ -653,6 +653,8 @@ Tie::File - Access the lines of a disk file via a Perl array
 	@old_recs = splice @array, 3, 7, new recs...;
 
 	untie @array;            # all finished
+
+        # See below for more options and methods
 
 =head1 DESCRIPTION
 
@@ -894,7 +896,7 @@ C<mjd-perl-tiefile-subscribe@plover.com>.
 
 =head1 LICENSE
 
-C<Tie::File> version 0.17 is copyright (C) 2002 Mark Jason Dominus.
+C<Tie::File> version 0.18 is copyright (C) 2002 Mark Jason Dominus.
 
 This library is free software; you may redistribute it and/or modify
 it under the same terms as Perl itself.
@@ -922,7 +924,7 @@ For licensing inquiries, contact the author at:
 
 =head1 WARRANTY
 
-C<Tie::File> version 0.17 comes with ABSOLUTELY NO WARRANTY.
+C<Tie::File> version 0.18 comes with ABSOLUTELY NO WARRANTY.
 For details, see the license.
 
 =head1 THANKS
