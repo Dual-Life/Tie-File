@@ -1,4 +1,20 @@
 
+What's new in version 0.20:
+
+  MAJOR INCOMPATIBLE CHANGE: Records read from the tied array now have
+  the record separator REMOVED by default.  This is to provide
+  do-what-I-meant behavior for expressions like
+
+        $tied[3] .= "more text";
+
+  Formerly, this would have appended "more text" *after* the newline character.
+
+  You may obtain the old behavior by supplying the 'autochomp => 0'
+  option in the 'tie' call, or by invoking the new 'autochomp'
+  accessor method.
+
+  Tests for this new feature.
+
 What's new in version 0.19:
 
   Fix for severe bug involving a corrupt read cache.

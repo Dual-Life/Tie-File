@@ -1,5 +1,21 @@
 
-Complete documentation is found below.
+(Complete documentation follows this change summary.)
+
+What's new in version 0.20:
+
+  MAJOR INCOMPATIBLE CHANGE: Records read from the tied array now have
+  the record separator REMOVED by default.  This is to provide
+  do-what-I-meant behavior for expressions like
+
+        $tied[3] .= "more text";
+
+  Formerly, this would have appended "more text" *after* the newline character.
+
+  You may obtain the old behavior by supplying the 'autochomp => 0'
+  option in the 'tie' call, or by invoking the new 'autochomp'
+  accessor method.
+
+  Tests for this new feature.
 
 What's new in version 0.19:
 
@@ -63,7 +79,7 @@ NAME
     Tie::File - Access the lines of a disk file via a Perl array
 
 SYNOPSIS
-            # This file documents Tie::File version 0.19
+            # This file documents Tie::File version 0.20
 
             tie @array, 'Tie::File', filename or die ...;
 
@@ -117,9 +133,9 @@ DESCRIPTION
 
     then the `@array' would appear to have four elements:
 
-            "Curse thes"
-            "e pes"
-            "ky flies"
+            "Curse th"
+            "e p"
+            "ky fli"
             "!\n"
 
 
@@ -127,13 +143,19 @@ DESCRIPTION
     Perl's special "paragraph mode" semantics (à la `$/ = ""') are
     not emulated.
 
-    Records read from the tied array will have the record separator
-    string on the end, just as if they were read from the `<...>'
-    operator. Records stored into the array will have the record
-    separator string appended before they are written to the file,
-    if they don't have one already. For example, if the record
-    separator string is `"\n"', then the following two lines do
-    exactly the same thing:
+    Records read from the tied array do not have the record
+    separator string on the end; this is to allow
+
+            $array[17] .= "extra";
+
+
+    to work as expected.
+
+    (See the section on "autochomp", below.) Records stored into the
+    array will have the record separator string appended before they
+    are written to the file, if they don't have one already. For
+    example, if the record separator string is `"\n"', then the
+    following two lines do exactly the same thing:
 
             $array[17] = "Cherry pie";
             $array[17] = "Cherry pie\n";
@@ -154,6 +176,27 @@ DESCRIPTION
     Inserting records that *contain* the record separator string
     will produce a reasonable result, but if you can't foresee what
     this result will be, you'd better avoid doing this.
+
+  `autochomp'
+
+    Normally, array elements have the record separator removed, so
+    that if the file contains the text
+
+            Gold
+            Frankincense
+            Myrrh
+
+
+    the tied array will appear to contain `("Gold", "Frankincense",
+    "Myrrh")'. If you set `autochomp' to a false value, the record
+    separator will not be removed. If the file above was tied with
+
+            tie @gifts, "Tie::File", $gifts, autochomp => 0;
+
+
+    then the array `@gifts' would appear to contain C<("Gold\n",
+    "Frankincense\n", "Myrrh\n")>, or (on Win32 systems)
+    C<("Gold\r\n", "Frankincense\r\n", "Myrrh\r\n")>.
 
   `mode'
 
@@ -254,8 +297,17 @@ Public Methods
     sideways; it merely guarantees to you that the idiot does not
     also have a green light at the same time.
 
-  Tying to an already-opened filehandle
+  `autochomp'
 
+            my $old_value = $o->autochomp(0);    # disable autochomp option
+            my $old_value = $o->autochomp(1);    #  enable autochomp option
+
+            my $ac = $o->autochomp();   # recover current value
+
+
+    See the section on "autochomp", above.
+
+Tying to an already-opened filehandle
     If `$fh' is a filehandle, such as is returned by `IO::File' or
     one of the other `IO' modules, you may use:
 
@@ -431,7 +483,7 @@ AUTHOR
     subscribe@plover.com'.
 
 LICENSE
-    `Tie::File' version 0.19 is copyright (C) 2002 Mark Jason
+    `Tie::File' version 0.20 is copyright (C) 2002 Mark Jason
     Dominus.
 
     This library is free software; you may redistribute it and/or
@@ -460,7 +512,7 @@ LICENSE
 
 
 WARRANTY
-    `Tie::File' version 0.19 comes with ABSOLUTELY NO WARRANTY. For
+    `Tie::File' version 0.20 comes with ABSOLUTELY NO WARRANTY. For
     details, see the license.
 
 THANKS

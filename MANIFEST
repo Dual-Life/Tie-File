@@ -23,6 +23,8 @@ t/18_rs_fixrec.t
 t/19_cache.t
 t/20_cache_full.t
 t/21_win32.t
+t/22_autochomp.t
+t/23_rv_ac_splice.t
 README
 WHATSNEW
 COPYING
