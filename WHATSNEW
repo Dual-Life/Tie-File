@@ -1,3 +1,13 @@
+What's new in version 0.21:
+
+  DEFERRED WRITING:  You may now use the ->defer method to request
+  that changes to the array *not* be written to the file immediately.
+  Changes will be written when the memory limit for deferred writes is
+  exceeded, or when you invoke the ->flush method.  You may discard
+  pending writes with the ->discard method.  You may set the limit of
+  discarded data with the 'dw_size' option.
+
+  The DELETE method now returns the correct values.
 
 What's new in version 0.20:
 

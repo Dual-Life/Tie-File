@@ -1,6 +1,17 @@
 
 (Complete documentation follows this change summary.)
 
+What's new in version 0.21:
+
+  DEFERRED WRITING:  You may now use the ->defer method to request
+  that changes to the array *not* be written to the file immediately.
+  Changes will be written when the memory limit for deferred writes is
+  exceeded, or when you invoke the ->flush method.  You may discard
+  pending writes with the ->discard method.  You may set the limit of
+  discarded data with the 'dw_size' option.
+
+  The DELETE method now returns the correct values.
+
 What's new in version 0.20:
 
   MAJOR INCOMPATIBLE CHANGE: Records read from the tied array now have
@@ -38,48 +49,13 @@ What's new in version 0.17:
 
   Minor cleanups and test improvements for release with Perl 5.7.3.
 
-What's new in version 0.16:
-
-  You may now tie an array to an already-opened seekable filehandle,
-  rather than to a filename.
-
-  More tests.
-
-  Bug fix in STORE: It wasn't tracking the cache size correctly
-
-  Bug fix in DELETE: it wasn't adjusting the offsets, cache, and LRU
-  tables correctly when deleting the last record in the file.
-
-What's new in version 0.15:
-
-  Fixed bug in POP of empty file.
-
-  SPLICE now defaults its arguments correctly.
-
-  test suite and ->_integrity now borrow the object's internal
-  filehandle instead of opening new ones; this may improve portability
-  of the test suite.
-
-  License is now "Same terms as Perl" instead of GPL.
-
-What's new in version 0.14:
-
-  Added ->flock method for locking the handle.
-
-  Added PUSH, POP, SHIFT, UNSHIFT, CLEAR, EXTEND,  DELETE and EXISTS methods.
-
-  Handling of negative position argument to 'SPLICE' is now correct.
-  Return of SPLICE in scalar context is now correct.
-
-
-
 ----------------------------------------------------------------
 
 NAME
     Tie::File - Access the lines of a disk file via a Perl array
 
 SYNOPSIS
-            # This file documents Tie::File version 0.20
+            # This file documents Tie::File version 0.21
 
             tie @array, 'Tie::File', filename or die ...;
 
@@ -87,9 +63,14 @@ SYNOPSIS
             print $array[42];        # display line 42 of the file
 
             $n_recs = @array;        # how many records are in the file?
-            $#array = $n_recs - 2;   # chop records off the end
+            $#array -= 2;            # chop two records off the end
 
-            # As you would expect:
+            for (@array) {
+              s/PERL/Perl/g;         # Replace PERL with Perl everywhere in the file
+            }
+
+            # These are just like regular push, pop, unshift, shift, and splice
+            # Except that they modify the file in the way you would expect
 
             push @array, new recs...;
             my $r1 = pop @array;
@@ -111,7 +92,7 @@ DESCRIPTION
 
     Changes to the array are reflected in the file immediately.
 
-    Lazy people may now stop reading the manual.
+    Lazy people and beginners may now stop reading the manual.
 
   `recsep'
 
@@ -187,8 +168,8 @@ DESCRIPTION
             Myrrh
 
 
-    the tied array will appear to contain `("Gold", "Frankincense",
-    "Myrrh")'. If you set `autochomp' to a false value, the record
+    the tied array will appear to contain C<("Gold", "Frankincense",
+    "Myrrh")>. If you set `autochomp' to a false value, the record
     separator will not be removed. If the file above was tied with
 
             tie @gifts, "Tie::File", $gifts, autochomp => 0;
@@ -225,9 +206,10 @@ DESCRIPTION
 
   `memory'
 
-    This is an (inexact) upper limit on the amount of memory that
-    `Tie::File' will consume at any time while managing the file. At
-    present, this is used as a bound on the size of the read cache.
+    This is an upper limit on the amount of memory that `Tie::File'
+    will consume at any time while managing the file. This is used
+    for two things: managing the *read cache* and managing the
+    I<deferred write buffer>.
 
     Records read in from the file are cached, to avoid having to re-
     read them repeatedly. If you read the same record twice, the
@@ -248,6 +230,29 @@ DESCRIPTION
 
     Setting the memory limit to 0 will inhibit caching; records will
     be fetched from disk every time you examine them.
+
+  `dw_size'
+
+    (This is an advanced feature. Skip this section on first
+    reading.) If you use deferred writing (See the section on
+    "Deferred Writing", below) then data you write into the array
+    will not be written directly to the file; instead, it will be
+    saved in the *deferred write buffer* to be written out later.
+    Data in the deferred write buffer is also charged against the
+    memory limit you set with the `memory' option.
+
+    You may set the `dw_size' option to limit the amount of data
+    that can be saved in the deferred write buffer. This limit may
+    not exceed the total memory limit. For example, if you set
+    `dw_size' to 1000 and `memory' to 2500, that means that no more
+    than 1000 bytes of deferred writes will be saved up. The space
+    available for the read cache will vary, but it will always be at
+    least 1500 bytes (if the deferred write buffer is full) and it
+    could grow as large as 2500 bytes (if the deferred write buffer
+    is empty.)
+
+    If you don't specify a `dw_size', it defaults to the entire
+    memory limit.
 
   Option Format
 
@@ -276,8 +281,20 @@ Public Methods
     example `LOCK_SH' or `LOCK_EX | LOCK_NB'. (These constants are
     provided by the `use Fcntl ':flock'' declaration.)
 
-    `MODE' is optional; `$o->flock' simply locks the file with
-    `LOCK_EX'.
+    `MODE' is optional; the default is `LOCK_EX'.
+
+    `Tie::File' promises that the following sequence of operations
+    will be safe:
+
+            my $o = tie @array, "Tie::File", $filename;
+            $o->flock;
+
+
+    In particular, `Tie::File' will *not* read or write the file
+    during the `tie' call. (Exception: Using `mode => O_TRUNC' will,
+    of course, erase the file during the `tie' call. If you want to
+    do this safely, then open the file without `O_TRUNC', lock the
+    file, and use `@array = ()'.)
 
     The best way to unlock a file is to discard the object and untie
     the array. It is probably unsafe to unlock the file without also
@@ -307,6 +324,10 @@ Public Methods
 
     See the section on "autochomp", above.
 
+  `defer', `flush', and `discard'
+
+    See the section on "Deferred Writing", below.
+
 Tying to an already-opened filehandle
     If `$fh' is a filehandle, such as is returned by `IO::File' or
     one of the other `IO' modules, you may use:
@@ -322,9 +343,84 @@ Tying to an already-opened filehandle
 
     Handles that were opened write-only won't work. Handles that
     were opened read-only will work as long as you don't try to
-    write to them. Handles must be attached to seekable sources of
-    data---that means no pipes or sockets. If you supply a non-
-    seekable handle, the `tie' call will try to abort your program.
+    modify the array. Handles must be attached to seekable sources
+    of data---that means no pipes or sockets. If you supply a non-
+    seekable handle, the `tie' call will try to throw an exception.
+    (On Unix systems, it will throw an exception.)
+
+Deferred Writing
+    (This is an advanced feature. Skip this section on first
+    reading.)
+
+    Normally, modifying a `Tie::File' array writes to the underlying
+    file immediately. Every assignment like `$a[3] = ...' rewrites
+    as much of the file as is necessary; typically, everything from
+    line 3 through the end will need to be rewritten. This is the
+    simplest and most transparent behavior. Performance even for
+    large files is reasonably good.
+
+    However, under some circumstances, this behavior may be
+    excessively slow. For example, suppose you have a million-record
+    file, and you want to do:
+
+            for (@FILE) {
+              $_ = "> $_";
+            }
+
+
+    The first time through the loop, you will rewrite the entire
+    file, from line 0 through the end. The second time through the
+    loop, you will rewrite the entire file from line 1 through the
+    end. The third time through the loop, you will rewrite the
+    entire file from line 2 to the end. And so on.
+
+    If the performance in such cases is unacceptable, you may defer
+    the actual writing, and then have it done all at once. The
+    following loop will perform much better for large files:
+
+            (tied @a)->defer;
+            for (@a) {
+              $_ = "> $_";
+            }
+            (tied @a)->flush;
+
+
+    If `Tie::File''s memory limit is large enough, all the writing
+    will done in memory. Then, when you call `->flush', the entire
+    file will be rewritten in a single pass.
+
+    Calling `->flush' returns the array to immediate-write mode. If
+    you wish to discard the deferred writes, you may call `-
+    >discard' instead of `->flush'. Note that in some cases, some of
+    the data will have been written already, and it will be too late
+    for `->discard' to discard all the changes.
+
+    Deferred writes are cached in memory up to the limit specified
+    by the `dw_size' option (see above). If the deferred-write
+    buffer is full and you try to write still more deferred data,
+    the buffer will be flushed. All buffered data will be written
+    immediately, the buffer will be emptied, and the now-empty space
+    will be used for future deferred writes.
+
+    If the deferred-write buffer isn't yet full, but the total size
+    of the buffer and the read cache would exceed the `memory'
+    limit, the oldest records will be flushed out of the read cache
+    until total usage is under the limit.
+
+    `push', `pop', `shift', `unshift', and `splice' cannot be
+    deferred. When you perform one of these operations, any deferred
+    data is written to the file and the operation is performed
+    immediately. This may change in a future version.
+
+    A soon-to-be-released version of this module may enabled
+    deferred write mode automagically if it guesses that you are
+    about to write many consecutive records. To disable this
+    feature, use
+
+            (tied @o)->autodefer(0);
+
+
+    (At present, this call does nothing.)
 
 CAVEATS
     (That's Latin for 'warnings'.)
@@ -337,44 +433,26 @@ CAVEATS
         a large file will always be fairly slow, because everything
         after the new record must be moved.
 
-        In particular, note that the following innocent-looking loop
-        has very bad behavior:
-
-                # million-line file
-                for (@file_array) {
-                  $_ .= 'x';
-                }
-
-
-        This is likely to be very slow, because the first iteration
-        must relocate lines 1 through 999,999; the second iteration
-        must relocate lines 2 through 999,999, and so on. The
-        relocation is done using block writes, however, so it's not
-        as slow as it might be.
-
-        A soon-to-be-released version of this module will provide a
-        mechanism for getting better performance in such cases, by
-        deferring the writing until it can be done all at once. This
-        deferred writing feature might be enabled automagically if
-        `Tie::File' guesses that you are about to write many
-        consecutive records. To disable this feature, use
-
-                (tied @o)->autodefer(0);
-
-
-        (At present, this call does nothing.)
-
     *   The behavior of tied arrays is not precisely the same as for
         regular arrays. For example:
 
-                undef $a[10];  print "How unusual!\n" if $a[10];
+                # This DOES print "How unusual!"
+                undef $a[10];  print "How unusual!\n" if defined $a[10];
 
 
         `undef'-ing a `Tie::File' array element just blanks out the
         corresponding record in the file. When you read it back
-        again, you'll see the record separator (typically, $a[10]
-        will appear to contain "\n") so the supposedly-`undef''ed
-        value will be true.
+        again, you'll get the empty string, so the supposedly-
+        `undef''ed value will be defined. Similarly, if you have
+        `autochomp' disabled, then
+
+                # This DOES print "How unusual!" if 'autochomp' is disabled
+                undef $a[10];  
+                print "How unusual!\n" if $a[10];
+
+
+        Because when `autochomp' is disabled, `$a[10]' will read
+        back as `"\n"' (or whatever the record separator string is.)
 
         There are other minor differences, but in general, the
         correspondence is extremely close.
@@ -382,8 +460,17 @@ CAVEATS
     *   Not quite every effort was made to make this module as efficient
         as possible. `FETCHSIZE' should use binary search instead of
         linear search. The cache's LRU queue should be a heap
-        instead of a list. These defects are probably minor; in any
-        event, they will be fixed in a later version of the module.
+        instead of a list.
+
+        The performance of the `flush' method could be improved. At
+        present, it still rewrites the tail of the file once for
+        each block of contiguous lines to be changed. In the typical
+        case, this will result in only one rewrite, but in peculiar
+        cases it might be bad. It should be possible to perform
+        *all* deferred writing with a single rewrite.
+
+        These defects are probably minor; in any event, they will be
+        fixed in a future version of the module.
 
     *   The author has supposed that since this module is concerned with
         file I/O, almost all normal use of it will be heavily I/O
@@ -394,6 +481,15 @@ CAVEATS
         requires substantial adjustment following a `splice'
         operation.
 
+    *
+    You might be tempted to think that deferred writing is like
+    transactions, with `flush' as `commit' and `discard' as
+    `rollback', but it isn't, so don't.
+
+SUBCLASSING
+    This version promises absolutely nothing about the internals,
+    which may change without notice. A future version of the module
+    will have a well-defined and stable subclassing API.
 
 WHAT ABOUT `DB_File'?
     `DB_File''s `DB_RECNO' feature does something similar to
@@ -443,9 +539,8 @@ WHAT ABOUT `DB_File'?
         process needs to call `$db->sync' after every write. When
         you change a `Tie::File' array, the changes are reflected in
         the file immediately; no explicit `->sync' call is required.
-        (The forthcoming "deferred writing" mode will allow you to
-        request that writes be held in memory until explicitly
-        `sync''ed.)
+        (Or you can enable deferred writing mode to require that
+        changes be explicitly sync'ed.)
 
     *   `DB_File' is only installed by default if you already have the
         `db' library on your system; `Tie::File' is pure Perl and is
@@ -482,14 +577,20 @@ AUTHOR
     is released, send a blank email message to `mjd-perl-tiefile-
     subscribe@plover.com'.
 
+    The most recent version of this module, including documentation
+    and any news of importance, will be available at
+
+            http://perl.plover.com/TieFile/
+
+
 LICENSE
-    `Tie::File' version 0.20 is copyright (C) 2002 Mark Jason
+    `Tie::File' version 0.21 is copyright (C) 2002 Mark Jason
     Dominus.
 
     This library is free software; you may redistribute it and/or
     modify it under the same terms as Perl itself.
 
-    These terms include your choice of (1) the Perl Artistic
+    These terms are your choice of any of (1) the Perl Artistic
     Licence, or (2) version 2 of the GNU General Public License as
     published by the Free Software Foundation, or (3) any later
     version of the GNU General Public License.
@@ -512,7 +613,7 @@ LICENSE
 
 
 WARRANTY
-    `Tie::File' version 0.20 comes with ABSOLUTELY NO WARRANTY. For
+    `Tie::File' version 0.21 comes with ABSOLUTELY NO WARRANTY. For
     details, see the license.
 
 THANKS
@@ -522,15 +623,16 @@ THANKS
     "choose any one.") Also big thanks to Abhijit Menon-Sen for all
     of the same things.
 
-    Special thanks to Craig Berry (for VMS portability help), Randy
-    Kobes (for Win32 portability help), Clinton Pierce and Autrijus
-    Tang (for heroic eleventh-hour Win32 testing above and beyond
-    the call of duty), and the rest of the CPAN testers (for testing
-    generally).
+    Special thanks to Craig Berry and Peter Prymmer (for VMS
+    portability help), Randy Kobes (for Win32 portability help),
+    Clinton Pierce and Autrijus Tang (for heroic eleventh-hour Win32
+    testing above and beyond the call of duty), and the rest of the
+    CPAN testers (for testing generally).
 
-    More thanks to: Edward Avis / Gerrit Haase / Nikola Knezevic /
-    Nick Ing-Simmons / Tassilo von Parseval / H. Dieter Pearcey /
-    Slaven Rezic / Peter Somu / Tels
+    Additional thanks to: Edward Avis / Gerrit Haase / Nikola
+    Knezevic / Nick Ing-Simmons / Tassilo von Parseval / H. Dieter
+    Pearcey / Slaven Rezic / Peter Somu / Autrijus Tang (again) /
+    Tels
 
 TODO
     Test DELETE machinery more carefully.
@@ -549,12 +651,11 @@ TODO
 
     Maybe an autolocking mode?
 
-    Finish deferred writing.
-
     Autodeferment.
 
     Record locking with fcntl()? Then you might support an undo log
-    and get real transactions. What a coup that would be.
+    and get real transactions. What a coup that would be. All would
+    bow before my might.
 
     Leave-blanks mode
 
