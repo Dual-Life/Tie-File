@@ -25,6 +25,9 @@ t/20_cache_full.t
 t/21_win32.t
 t/22_autochomp.t
 t/23_rv_ac_splice.t
+t/24_cache_loop.t
+t/25_gen_nocache.t
+t/26_twrite.t
 t/30_defer.t
 t/31_autodefer.t
 t/32_defer_misc.t
