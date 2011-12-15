@@ -1,4 +1,14 @@
 
+What's new in version 0.97_01:
+ All changes in this release are from perl 5 porters:
+ - Update address for FSF in POD
+ - z/OS: CPAN-ized ext/ and lib/
+ - Missing ; in Tie::File
+ - Typos in comments
+ - BeOS specific Updates
+ - turn the alarm off in the tests (was Re: maint @ 20617 (on VMS))
+ - fix for VMS - last if $last_read_was_short
+
 What's new in version 0.96:
 
   Minor bug fixes only.

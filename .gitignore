@@ -1,0 +1,9 @@
+/blib
+*~
+/Makefile
+*.orig
+*.rej
+/MANIFEST.bak
+/Tie-File-*
+/MYMETA.json
+/MYMETA.yml

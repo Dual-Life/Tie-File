@@ -40,5 +40,5 @@ t/40_abs_cache.t
 t/41_heap.t
 t/42_offset.t
 README
-WHATSNEW
+ChangeLog
 COPYING
