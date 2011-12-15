@@ -1,9 +1,10 @@
 #!/usr/bin/perl
 
-use lib '/home/mjd/src/perl/Tie-File2/lib';
 my $file = "tf$$.txt";
 
 print "1..59\n";
+
+use Fcntl 'O_RDONLY';
 
 my $N = 1;
 use Tie::File;
@@ -147,9 +148,9 @@ if (setup_badly_terminated_file(2)) {
 # There's special-case code to fix the final record when it is read normally.
 # But the $#a forces it to be read from the cache, which skips the
 # termination.
-$badrec = "world\nhello";
+$badrec = "world${RECSEP}hello";
 if (setup_badly_terminated_file(1)) {
-  tie(@a, "Tie::File", $file, mode => 0, recsep => $RECSEP)
+  tie(@a, "Tie::File", $file, mode => O_RDONLY, recsep => $RECSEP)
       or die "Couldn't tie file: $!";
   my $z = $#a;
   $z = $a[1];
