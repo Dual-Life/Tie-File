@@ -1,6 +1,9 @@
 
+What's new in version 0.98:
+ - No changes. Production release after CPAN testers cleared.
+	
 What's new in version 0.97_01:
- All changes in this release are from perl 5 porters:
+All changes in this release are from perl 5 porters:
  - Update address for FSF in POD
  - z/OS: CPAN-ized ext/ and lib/
  - Missing ; in Tie::File
