@@ -2009,7 +2009,7 @@ Tie::File - Access the lines of a disk file via a Perl array
 
 =head1 SYNOPSIS
 
-	# This file documents Tie::File version 0.98
+	# This file documents Tie::File version 0.99
 	use Tie::File;
 
 	tie @array, 'Tie::File', filename or die ...;
@@ -2560,7 +2560,7 @@ For licensing inquiries, contact the author at:
 
 =head1 WARRANTY
 
-C<Tie::File> version 0.98 comes with ABSOLUTELY NO WARRANTY.
+C<Tie::File> version 0.99 comes with ABSOLUTELY NO WARRANTY.
 For details, see the license.
 
 =head1 THANKS
