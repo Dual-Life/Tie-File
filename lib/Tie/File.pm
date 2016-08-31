@@ -170,7 +170,6 @@ sub _fetch {
     return unless defined $o;
   }
 
-  my $fh = $self->{FH};
   $self->_seek($n);             # we can do this now that offsets is populated
   my $rec = $self->_read_record;
 
