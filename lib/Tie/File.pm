@@ -2013,8 +2013,8 @@ Tie::File - Access the lines of a disk file via a Perl array
 
 	tie @array, 'Tie::File', filename or die ...;
 
-	$array[13] = 'blah';     # line 13 of the file is now 'blah'
-	print $array[42];        # display line 42 of the file
+	$array[13] = 'blah';     # line 14 of the file is now 'blah'
+	print $array[42];        # display line 43 of the file
 
 	$n_recs = @array;        # how many records are in the file?
 	$#array -= 2;            # chop two records off the end
@@ -2093,9 +2093,9 @@ the same thing:
 	$array[17] = "Cherry pie";
 	$array[17] = "Cherry pie\n";
 
-The result is that the contents of line 17 of the file will be
-replaced with "Cherry pie"; a newline character will separate line 17
-from line 18.  This means that this code will do nothing:
+The result is that the contents of line 18 of the file will be
+replaced with "Cherry pie"; a newline character will separate line 18
+from line 19.  This means that this code will do nothing:
 
 	chomp $array[17];
 
@@ -2324,7 +2324,7 @@ the @array.
 
 Normally, modifying a C<Tie::File> array writes to the underlying file
 immediately.  Every assignment like C<$a[3] = ...> rewrites as much of
-the file as is necessary; typically, everything from line 3 through
+the file as is necessary; typically, everything from line 4 through
 the end will need to be rewritten.  This is the simplest and most
 transparent behavior.  Performance even for large files is reasonably
 good.
