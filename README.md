@@ -1,3 +1,5 @@
+[![](https://github.com/toddr/Tie-File/workflows/linux/badge.svg)](https://github.com/toddr/Tie-File/actions) [![](https://github.com/toddr/Tie-File/workflows/macos/badge.svg)](https://github.com/toddr/Tie-File/actions) [![](https://github.com/toddr/Tie-File/workflows/windows/badge.svg)](https://github.com/toddr/Tie-File/actions)
+
 # NAME
 
 Tie::File - Access the lines of a disk file via a Perl array
