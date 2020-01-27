@@ -5,7 +5,6 @@ Makefile.PL
 MANIFEST
 README
 README.md
-t/00_version.t
 t/01_gen.t
 t/02_fetchsize.t
 t/03_longfetch.t
