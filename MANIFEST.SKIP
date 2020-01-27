@@ -3,3 +3,5 @@
 ^MYMETA.*
 ^MANIFEST.bak
 ^.gitignore
+^Makefile$
+^MANIFEST.SKIP$
