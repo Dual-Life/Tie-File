@@ -1,13 +1,17 @@
-
 package Tie::File;
+
 require 5.005;
+
+use strict;
+use warnings;
+
 use Carp ':DEFAULT', 'confess';
 use POSIX 'SEEK_SET';
 use Fcntl 'O_CREAT', 'O_RDWR', 'LOCK_EX', 'LOCK_SH', 'O_WRONLY', 'O_RDONLY';
 sub O_ACCMODE () { O_RDONLY | O_RDWR | O_WRONLY }
 
 
-$VERSION = "1.06";
+our $VERSION = "1.06";
 my $DEFAULT_MEMORY_SIZE = 1<<21;    # 2 megabytes
 my $DEFAULT_AUTODEFER_THRESHHOLD = 3; # 3 records
 my $DEFAULT_AUTODEFER_FILELEN_THRESHHOLD = 65536; # 16 disk blocksful
@@ -15,6 +19,7 @@ my $DEFAULT_AUTODEFER_FILELEN_THRESHHOLD = 65536; # 16 disk blocksful
 my %good_opt = map {$_ => 1, "-$_" => 1}
                  qw(memory dw_size mode recsep discipline 
                     autodefer autochomp autodefer_threshhold concurrent);
+our $DIAGNOSTIC = 0;
 
 sub TIEARRAY {
   if (@_ % 2 != 0) {
@@ -757,7 +762,7 @@ sub _oadjust {
     # to the first new one of this batch
     for my $i ($prev_end+2 .. $pos - 1) {
       $self->{offsets}[$i] += $delta;
-      $newkey{$i} = $i + $delta_recs;
+      $newkeys{$i} = $i + $delta_recs;
     }
 
     $prev_end = $pos + @data - 1; # last record moved on this pass 
@@ -862,14 +867,14 @@ sub _fill_offsets_to {
   return $self->{offsets}[$n] if $self->{eof};
 
   my $fh = $self->{fh};
-  local *OFF = $self->{offsets};
+  my $OFF = $self->{offsets};
   my $rec;
 
-  until ($#OFF >= $n) {
+  until (scalar @$OFF > $n) {
     $self->_seek(-1);           # tricky -- see comment at _seek
     $rec = $self->_read_record;
     if (defined $rec) {
-      push @OFF, int(tell $fh);  # Tels says that int() saves memory here
+      push @$OFF, int(tell $fh);  # Tels says that int() saves memory here
     } else {
       $self->{eof} = 1;
       return;                   # It turns out there is no such record
@@ -878,14 +883,14 @@ sub _fill_offsets_to {
 
   # we have now read all the records up to record n-1,
   # so we can return the offset of record n
-  $OFF[$n];
+  $OFF->[$n];
 }
 
 sub _fill_offsets {
   my ($self) = @_;
 
   my $fh = $self->{fh};
-  local *OFF = $self->{offsets};
+  my $OFF = $self->{offsets};
 
   $self->_seek(-1);           # tricky -- see comment at _seek
 
@@ -893,11 +898,11 @@ sub _fill_offsets {
   # five times faster. 20030508
   while ( defined $self->_read_record()) {
     # int() saves us memory here
-    push @OFF, int(tell $fh);
+    push @$OFF, int(tell $fh);
   }
 
   $self->{eof} = 1;
-  $#OFF;
+  return scalar @$OFF - 1;
 }
 
 # assumes that $rec is already suitably terminated
@@ -1222,26 +1227,26 @@ sub _annotate_ad_history {
   return if $self->{defer};     # already in explicit defer mode
   return unless $self->{offsets}[-1] >= $self->{autodefer_filelen_threshhold};
 
-  local *H = $self->{ad_history};
+  my $H = $self->{ad_history};
   if ($n eq 'CLEAR') {
-    @H = (-2, -1);              # prime the history with fake records
+    @$H = (-2, -1);              # prime the history with fake records
     $self->_stop_autodeferring;
   } elsif ($n =~ /^\d+$/) {
-    if (@H == 0) {
-      @H =  ($n, $n);
+    if (@$H == 0) {
+      @$H =  ($n, $n);
     } else {                    # @H == 2
-      if ($H[1] == $n-1) {      # another consecutive record
-        $H[1]++;
-        if ($H[1] - $H[0] + 1 >= $self->{autodefer_threshhold}) {
+      if ($H->[1] == $n-1) {      # another consecutive record
+        $H->[1]++;
+        if ($H->[1] - $H->[0] + 1 >= $self->{autodefer_threshhold}) {
           $self->{autodeferring} = 1;
         }
       } else {                  # nonconsecutive- erase and start over
-        @H = ($n, $n);
+        @$H = ($n, $n);
         $self->_stop_autodeferring;
       }
     }
   } else {                      # SPLICE or STORESIZE or some such
-    @H = ();
+    @$H = ();
     $self->_stop_autodeferring;
   }
 }
@@ -2003,7 +2008,7 @@ sub _nodes {
   ($self->[$i], $self->_nodes($i*2), $self->_nodes($i*2+1));
 }
 
-"Cogito, ergo sum.";  # don't forget to return a true value from the file
+1;
 
 __END__
 
