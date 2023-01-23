@@ -1,4 +1,8 @@
 #!/usr/bin/perl
+
+use strict;
+use warnings;
+
 # Demonstrate correctness of SYNOPSIS in documentation
 $| = 1;
 my $file = "tf42-$$.txt";
@@ -20,6 +24,8 @@ use Tie::File;
 print "ok $N - use Tie::File\n"; $N++;
 
 my $desc = 'Tie::File';
+
+my @array;
 my $o = tie @array, 'Tie::File', $file;
 defined ($o)
     ? print "ok $N - $desc\n"
@@ -39,7 +45,7 @@ $N++;
     $N++;
 
     $desc = "got expected amount of records in file";
-    $n_recs = @array;
+    my $n_recs = @array;
     ($n_recs == $MAX + 1)
         ? print "ok $N - $desc\n"
         : print "not ok $N - $desc\n";
@@ -56,7 +62,7 @@ $N++;
 
     $desc = "replace PERL with Perl everywhere in the file";
 for (@array) { s/PERL/Perl/g; }
-$exp = "Perl-" . ($MAX - 2);
+my $exp = "Perl-" . ($MAX - 2);
 ($array[-1] eq $exp)
     ? print "ok $N - $desc\n"
     : print "not ok $N - $desc\n";
@@ -140,6 +146,11 @@ $desc = "got expected element";
     : print "not ok $N - $desc\n";
 $N++;
 
+$o = undef;  # destroy Tie::File object holding file open
+# Untie the first file
+my $u = untie @array;
+# TODO: perldoc -f untie does not specify return value for untie
+
 open my $G, "<", $file or die "Unable to open $file for reading: $!";
 open my $H, ">", $dupe or die "Unable to open $dupe for writing: $!";
 while (my $l = <$G>) {
@@ -149,11 +160,8 @@ while (my $l = <$G>) {
 close $H or die "Unable to close $dupe after writing: $!";
 close $G or die "Unable to close $file after reading: $!";
 
-# Untie the first file
-my $u = untie @array; 
-# TODO: perldoc -f untie does not specify return value for untie
-
 $desc = 'tie to dupe file';
+my @dupe;
 my $p = tie @dupe, 'Tie::File', $file;
 defined ($p)
     ? print "ok $N - $desc\n"
@@ -187,10 +195,10 @@ $desc = "last element in dupe array corresponds to last line of dupe file";
 $N++;
 
 END {
-    untie @array;
-    untie @dupe;
     undef $o;
     undef $p;
+    untie @array;
+    untie @dupe;
     1 while unlink $file;
     1 while unlink $dupe;
 }
