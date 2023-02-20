@@ -46,7 +46,7 @@ jobs:
     strategy:
       matrix:
         perl-version:
-          - "latest"
+          - "devel"
           - "5.36"
           - "5.34"
           - "5.32"
